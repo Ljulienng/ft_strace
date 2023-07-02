@@ -2,18 +2,15 @@ MAKE = make
 
 # Directory names
 INC_DIR =	include/
-LIBFT_INC =	libft/includes
 SRC_DIR =	src/
 BIN_DIR =	bin/
-LIBFT_DIR = libft/
 
 # Compiler and compiler flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -I$(LIBFT_INC) -g
+CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -g -fsanitize=address
  
 # Library and object file names
 NAME = ft_strace
-LIBFT = libft.a
 SRC_FILES = ft_strace.c \
 			utils.c
 
@@ -22,19 +19,16 @@ SRCS = $(addprefix $(SRC_DIR), $(SRC_FILES))
 BINS = $(addprefix $(BIN_DIR), $(SRC_FILES:.c=.o))
 
 # Default target
-all: libft $(NAME)
+all: $(NAME)
 # Build the library
 $(NAME): $(BINS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBFT_DIR)$(LIBFT)
+	$(CC) $(CFLAGS) -o $@ $^
 
 
 # Build object files from C source files
 $(BIN_DIR)%.o: $(SRC_DIR)%.c
 	mkdir -p $(BIN_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
-
-libft:
-	$(MAKE) -C $(LIBFT_DIR)
 
 # Clean up
 clean:
