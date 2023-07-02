@@ -80,20 +80,26 @@ typedef struct s_summary
 	struct s_summary *next;
 } t_summary;
 
-char *ft_itoa(unsigned long n, int base);
-void print_read_args_32(pid_t pid, t_regs_32 regs);
-void summary_activate_32(unsigned long sys, t_regs_32 regs);
+union regs_union
+{
+	t_regs_32 regs32;
+	struct user_regs_struct regs64;
+};
+
+void summary_activate(unsigned long sys, union regs_union regs, int is_64bit);
+
+void print_read_args(pid_t pid, union regs_union regs, int is_64bit);
 void print_syscall_32(unsigned long sys, t_regs_32 regs, int pid);
-void print_read_args(pid_t pid, struct user_regs_struct regs);
 void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid);
-void summary_activate_64(unsigned long sys, struct user_regs_struct regs);
 double calc_time();
 double microseconds_to_seconds(long long microseconds);
 long long time_in_microseconds(struct timeval start_time, struct timeval end_time);
 int check_summary(unsigned long sys, int error);
 t_summary *ft_fill_summary(int nb, int error, int sys, long long time);
+
 void ft_lstadd_back(t_summary **alst, t_summary *new);
 double calc_pourcent(double valeur, double total);
+char *ft_itoa(unsigned long n, int base);
 
 extern t_summary *g_summary;
 

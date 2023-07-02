@@ -7,11 +7,12 @@ BIN_DIR =	bin/
 
 # Compiler and compiler flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -g -fsanitize=address
+CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -g
  
 # Library and object file names
 NAME = ft_strace
 SRC_FILES = ft_strace.c \
+			printer.c \
 			utils.c
 
 # List of include directories

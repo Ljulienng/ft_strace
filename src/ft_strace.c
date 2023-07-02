@@ -1,7 +1,6 @@
 #include "ft_strace.h"
 
 t_summary *g_summary;
-
 void print_summarry(double time)
 {
 	printf("%% time     seconds  usecs/call     calls    errors syscall\n------- ----------- ----------- --------- --------- ----------------\n");
@@ -73,14 +72,14 @@ int main(int argc, char **argv, char **env)
 		first_arg++;
 	}
 
-	int taille_totale = 0;
+	int tota_size = 0;
 	for (int i = 1; i < argc; i++)
 	{
-		taille_totale += strlen(argv[i]) + 1;
+		tota_size += strlen(argv[i]) + 1;
 	}
 
 	// Allouer de la mémoire pour la chaîne
-	char *chaine = (char *)malloc(sizeof(char) * taille_totale + 100);
+	char *chaine = (char *)malloc(sizeof(char) * tota_size + 100);
 	chaine[0] = '\0';
 	strcat(chaine, "[");
 	// Concaténer les arguments dans la chaîne
@@ -91,7 +90,6 @@ int main(int argc, char **argv, char **env)
 		strcat(chaine, "\", ");
 	}
 	chaine[strlen(chaine) - 2] = ']';
-	// Supprimer l'espace final
 	chaine[strlen(chaine) - 1] = '\0';
 	const char *binary_path = NULL;
 	if (g_summary->on == 1)
@@ -124,6 +122,7 @@ int main(int argc, char **argv, char **env)
 		bits = 64;
 	else
 	{
+		// printf("%d, %d, %d\n", elf_header.e_ident[EI_CLASS], ELFCLASS32, ELFCLASS64);
 		fprintf(stderr, "Binaire incompatible avec la machine actuelle.\n");
 		fclose(fp);
 		free(chaine);
@@ -206,9 +205,9 @@ int main(int argc, char **argv, char **env)
 				if (g_summary->on == 1)
 				{
 					if (bits == 64)
-						summary_activate_64(regs.orig_rax, regs);
+						summary_activate(regs.orig_rax, (union regs_union){.regs64 = regs}, 1);
 					else if (bits == 32)
-						summary_activate_32(regs_32.orig_eax, regs_32);
+						summary_activate(regs_32.orig_eax, (union regs_union){.regs32 = regs_32}, 0);
 				}
 				else
 				{

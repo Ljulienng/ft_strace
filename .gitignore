@@ -1,3 +1,7 @@
+tests/
+test*
+ft_strace
+
 # Prerequisites
 *.d
 
