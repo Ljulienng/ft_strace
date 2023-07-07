@@ -169,7 +169,7 @@ void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid)
 			}
 			else
 			{
-				print_read_args(pid, (union regs_union){.regs64 = regs}, 0);
+				print_read_args(pid, (union regs_union){.regs64 = regs}, 1);
 			}
 		}
 		if (g_syscall[sys].arg[i] == 4)
@@ -192,7 +192,7 @@ void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid)
 			}
 			else
 			{
-				print_read_args(pid, (union regs_union){.regs64 = regs}, 0);
+				print_read_args(pid, (union regs_union){.regs64 = regs}, 1);
 			}
 		}
 		if (g_syscall[sys].arg[i] == 5)

@@ -13,7 +13,8 @@ CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -g
 NAME = ft_strace
 SRC_FILES = ft_strace.c \
 			printer.c \
-			utils.c
+			utils.c \
+			summary.c
 
 # List of include directories
 SRCS = $(addprefix $(SRC_DIR), $(SRC_FILES))

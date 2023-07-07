@@ -1,62 +1,15 @@
 #include "ft_strace.h"
 
 t_summary *g_summary;
-void print_summarry(double time)
-{
-	printf("%% time     seconds  usecs/call     calls    errors syscall\n------- ----------- ----------- --------- --------- ----------------\n");
-	t_summary *tmp = g_summary;
-	tmp = tmp->next;
-	int syscall_total = 1;
-	int error_total = 0;
-	while (tmp)
-	{
-		printf("%6.2f", calc_pourcent(tmp->seconds, time));
-		printf("%14.6f", tmp->seconds);
-		printf("%11lld", tmp->usecond);
-		printf("%11d", tmp->number_of_calls);
-		if (tmp->error == 0)
-			printf("          ");
-		else
-			printf("%10d", tmp->error);
-		if (g_summary->arch == 64)
-			printf(" %s\n", g_syscall[tmp->syscall].name);
-		else
-		{
-			int count = 0;
-			while (g_syscall[count].code32 && g_syscall[count].code32 != tmp->syscall)
-				count++;
-			printf(" %s\n", g_syscall[count].name);
-		}
-		syscall_total = syscall_total + tmp->number_of_calls;
-		error_total = error_total + tmp->error;
-		tmp = tmp->next;
-	}
-	printf("------- ----------- ----------- --------- --------- ----------------\n");
-	printf("100.00    %9.6f                    %2d%10d total\n", time, syscall_total, error_total);
-	return;
-}
-
-void free_summary()
-{
-	t_summary *temp;
-	while (g_summary->next)
-	{
-		temp = g_summary;
-		g_summary = g_summary->next;
-		free(temp);
-	}
-	free(g_summary);
-	return;
-}
 
 int main(int argc, char **argv, char **env)
 {
 	pid_t pid;
-	int status;
-	struct user_regs_struct regs;
-	int i = 0;
-	struct iovec iov;
 	t_regs_32 regs_32;
+	struct user_regs_struct regs;
+	struct iovec iov;
+	int status;
+	int i = 0;
 
 	if (argc < 2)
 	{
@@ -78,19 +31,6 @@ int main(int argc, char **argv, char **env)
 		tota_size += strlen(argv[i]) + 1;
 	}
 
-	// Allouer de la mémoire pour la chaîne
-	char *chaine = (char *)malloc(sizeof(char) * tota_size + 100);
-	chaine[0] = '\0';
-	strcat(chaine, "[");
-	// Concaténer les arguments dans la chaîne
-	for (int i = 1; i < argc; i++)
-	{
-		strcat(chaine, "\"");
-		strcat(chaine, argv[i]);
-		strcat(chaine, "\", ");
-	}
-	chaine[strlen(chaine) - 2] = ']';
-	chaine[strlen(chaine) - 1] = '\0';
 	const char *binary_path = NULL;
 	if (g_summary->on == 1)
 		binary_path = argv[2];
@@ -101,7 +41,7 @@ int main(int argc, char **argv, char **env)
 	if (!fp)
 	{
 		fprintf(stderr, "Impossible d'ouvrir le fichier binaire %s.\n", binary_path);
-		free(chaine);
+		// free(chaine);
 		return 1;
 	}
 
@@ -111,7 +51,7 @@ int main(int argc, char **argv, char **env)
 	{
 		fprintf(stderr, "Erreur de lecture de l'en-tête ELF.\n");
 		fclose(fp);
-		free(chaine);
+		// free(chaine);
 		return 1;
 	}
 
@@ -125,7 +65,7 @@ int main(int argc, char **argv, char **env)
 		// printf("%d, %d, %d\n", elf_header.e_ident[EI_CLASS], ELFCLASS32, ELFCLASS64);
 		fprintf(stderr, "Binaire incompatible avec la machine actuelle.\n");
 		fclose(fp);
-		free(chaine);
+		// free(chaine);
 		return 1;
 	}
 	g_summary->arch = bits;
@@ -222,11 +162,11 @@ int main(int argc, char **argv, char **env)
 		if (g_summary->on == 0)
 			printf("exit_group(0) = ?\n+++ exited with 0 +++\n");
 	}
-	free(chaine);
+	// free(chaine);
 	double time_total;
 	time_total = calc_time();
 	if (g_summary->on == 1)
-		print_summarry(time_total);
+		print_summary(time_total);
 	free_summary();
 	fclose(fp);
 	return 0;
