@@ -7,7 +7,7 @@ BIN_DIR =	bin/
 
 # Compiler and compiler flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -g
+CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -g -fsanitize=address
  
 # Library and object file names
 NAME = ft_strace

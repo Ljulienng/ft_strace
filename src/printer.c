@@ -2,25 +2,43 @@
 
 void print_read_args(pid_t pid, union regs_union regs, int is_64bit)
 {
-	unsigned int i;
-	long data;
-	char buf[4096];
+    unsigned int i;
+	int count = 0;
+    long data;
+    char buf[4096];
 
-	memset(buf, 0, sizeof(buf));
-	i = 0;
-	do
+    memset(buf, 0, sizeof(buf));
+    i = 0;
+    do
+    {
+        data = ptrace(PTRACE_PEEKDATA, pid, (is_64bit ? regs.regs64.rsi : regs.regs32.ecx) + i, NULL);
+        if (data == -1)
+        {
+            perror("ptrace");
+            return;
+        }
+        memcpy(buf + i, &data, sizeof(long));
+        i += sizeof(long);
+    } while (i < sizeof(buf) && *(buf + i - 1) != '\0');
+
+    printf("\"");
+	for(i = 0; i < sizeof(buf) && count != 24; ++i)
 	{
-		data = ptrace(PTRACE_PEEKDATA, pid, (is_64bit ? regs.regs64.rsi : regs.regs32.ecx) + i, NULL);
-		if (data == -1)
-		{
-			perror("ptrace");
-			return;
+		unsigned char c = buf[i];
+		if (isprint(c))
+			printf("%c", c);
+		else {
+			printf("\\%o", c);  // Use octal format specifier instead of hexadecimal
+			count++;
 		}
-		memcpy(buf + i, &data, sizeof(long));
-		i += sizeof(long);
-	} while (i < sizeof(buf) && *(buf + i - 1) != '\0');
-	printf("\"%s\"", buf);
+	}
+
+    printf("\"");
+	if (count == 24)
+		printf("...");
 }
+
+
 
 void print_syscall_32(unsigned long sys, t_regs_32 regs, int pid)
 {
@@ -130,7 +148,7 @@ void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid)
 		return;
 	if (sys == 59)
 		return;
-	printf("%ld: %s(", sys, g_syscall[sys].name);
+	printf("%s(", g_syscall[sys].name);
 	int i = 0;
 	int e = 0;
 	char buf[100000];

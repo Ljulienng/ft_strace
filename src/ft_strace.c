@@ -4,6 +4,35 @@ t_summary *g_summary;
 
 // Your helper functions here...
 
+char *resolve_path(char *binary) {
+    // If the binary is specified with an absolute path or relative to current directory,
+    // don't search in PATH, just return the binary path itself
+    if (binary[0] == '/' || strncmp(binary, "./", 2) == 0) {
+        return strdup(binary);
+    }
+
+    char *path_env = strdup(getenv("PATH"));
+    char *saveptr;
+    char *path = strtok_r(path_env, ":", &saveptr);
+
+    while (path) {
+        char *possible_path = malloc(strlen(path) + strlen(binary) + 2);
+        sprintf(possible_path, "%s/%s", path, binary);
+
+        if (access(possible_path, X_OK) == 0) { // file exists and is executable
+            free(path_env);
+            return possible_path;
+        }
+
+        free(possible_path);
+        path = strtok_r(NULL, ":", &saveptr);
+    }
+
+    free(path_env);
+    return strdup(binary); // Return original binary if not found in PATH
+}
+
+
 // Parsing command line arguments
 int parse_arguments(int argc, char **argv) {
     if (argc < 2) {
@@ -55,9 +84,10 @@ int determine_architecture(Elf64_Ehdr *elf_header) {
 // Fork and execute the binary
 pid_t fork_and_exec(const char *binary_path, char **argv, char **env, int first_arg) {
     pid_t pid = fork();
+    (void)env;
     if (pid == 0) {
-        execve(binary_path, argv + first_arg, env);
-        perror("execve");
+        execvp(binary_path, argv + first_arg);  // Changed execve to execvp
+        perror("execvp");  // Changed execve to execvp in perror
         exit(1);
     } else if (pid < 0) {
         perror("fork");
@@ -161,8 +191,18 @@ int main(int argc, char **argv, char **env) {
         return 1;
     }
 
-    const char *binary_path = g_summary->on == 1 ? argv[2] : argv[1];
-    
+    const char *binary_path;
+    if (g_summary->on == 1) {
+        binary_path = resolve_path(argv[2]);
+    } else {
+        binary_path = resolve_path(argv[1]);
+    }
+
+    if (!binary_path) {
+        fprintf(stderr, "Impossible de trouver le binaire %s.\n", argv[1]);
+        return 1;
+    }
+
     FILE *fp = open_binary_file(binary_path);
     if (!fp) {
         return 1;
@@ -191,5 +231,7 @@ int main(int argc, char **argv, char **env) {
     // int status = 0;
     int ret = handle_process(pid, bits, argv);
     fclose(fp);
+
+    // free(binary_path);
     return ret;
 }

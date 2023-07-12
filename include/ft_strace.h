@@ -22,6 +22,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <elf.h>
+#include <ctype.h>
+
 
 #define TNONE 0
 #define TINT 1
