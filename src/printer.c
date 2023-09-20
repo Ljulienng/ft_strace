@@ -28,7 +28,7 @@ void print_read_args(pid_t pid, union regs_union regs, int is_64bit)
 		if (isprint(c))
 			printf("%c", c);
 		else {
-			printf("\\%o", c);  // Use octal format specifier instead of hexadecimal
+			printf("\\%o", c);
 			count++;
 		}
 	}
