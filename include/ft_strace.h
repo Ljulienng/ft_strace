@@ -21,9 +21,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <asm/ptrace-abi.h>
 #include <elf.h>
 #include <ctype.h>
-
 
 #define TNONE 0
 #define TINT 1
@@ -91,7 +91,7 @@ union regs_union
 void summary_activate(unsigned long sys, union regs_union regs, int is_64bit);
 void print_summary(double time);
 void free_summary(void);
-void print_read_args(pid_t pid, union regs_union regs, int is_64bit);
+void print_read_args(pid_t pid, union regs_union regs, int is_64bit, unsigned long sys);
 void print_syscall_32(unsigned long sys, t_regs_32 regs, int pid);
 void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid);
 double calc_time();

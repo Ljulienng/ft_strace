@@ -1,44 +1,30 @@
 #include "ft_strace.h"
 
-void print_read_args(pid_t pid, union regs_union regs, int is_64bit)
+void print_read_args(pid_t pid, union regs_union regs, int is_64bit, unsigned long sys)
 {
-    unsigned int i;
+	unsigned int i;
 	int count = 0;
-    long data;
-    char buf[4096];
+	long data;
+	char buf[4096];
 
-    memset(buf, 0, sizeof(buf));
-    i = 0;
-    do
-    {
-        data = ptrace(PTRACE_PEEKDATA, pid, (is_64bit ? regs.regs64.rsi : regs.regs32.ecx) + i, NULL);
-        if (data == -1)
-        {
-            perror("ptrace");
-            return;
-        }
-        memcpy(buf + i, &data, sizeof(long));
-        i += sizeof(long);
-    } while (i < sizeof(buf) && *(buf + i - 1) != '\0');
-
-    printf("\"");
-	for(i = 0; i < sizeof(buf) && count != 24; ++i)
+	memset(buf, 0, sizeof(buf));
+	i = 0;
+	do
 	{
-		unsigned char c = buf[i];
-		if (isprint(c))
-			printf("%c", c);
-		else {
-			printf("\\%o", c);
-			count++;
+		data = ptrace(PTRACE_PEEKDATA, pid, (is_64bit ? regs.regs64.rsi : regs.regs32.ecx) + i, NULL);
+		if (data == -1)
+		{
+			perror("ptrace");
+			return;
 		}
-	}
+		memcpy(buf + i, &data, sizeof(long));
+		i += sizeof(long);
+	} while (i < sizeof(buf) && *(buf + i - 1) != '\0');
 
-    printf("\"");
-	if (count == 24)
-		printf("...");
+	(void)sys;
+	(void)count;
+	printf("\"%s\"", buf);
 }
-
-
 
 void print_syscall_32(unsigned long sys, t_regs_32 regs, int pid)
 {
@@ -88,7 +74,7 @@ void print_syscall_32(unsigned long sys, t_regs_32 regs, int pid)
 			}
 			else
 			{
-				print_read_args(pid, (union regs_union){.regs32 = regs}, 0);
+				print_read_args(pid, (union regs_union){.regs32 = regs}, 0, sys);
 			}
 		}
 		if (g_syscall[count].arg[i] == 4)
@@ -111,7 +97,7 @@ void print_syscall_32(unsigned long sys, t_regs_32 regs, int pid)
 			}
 			else
 			{
-				print_read_args(pid, (union regs_union){.regs32 = regs}, 0);
+				print_read_args(pid, (union regs_union){.regs32 = regs}, 0, sys);
 			}
 		}
 		if (g_syscall[count].arg[i] == 5)
@@ -143,16 +129,17 @@ void print_syscall_32(unsigned long sys, t_regs_32 regs, int pid)
 
 void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid)
 {
-
+	// printf("sys = %lu\n", sys);
+	if (sys > 313)
+		return;
 	if (strncmp("exit_group", g_syscall[sys].name, 10) == 0)
 		return;
 	if (sys == 59)
 		return;
-	printf("%s(", g_syscall[sys].name);
+
+	// printf("%s(", g_syscall[sys].name);
 	int i = 0;
-	int e = 0;
 	char buf[100000];
-	long data = 0;
 	long long arg_registre[6] = {regs.rdi, regs.rsi, regs.rdx, regs.r10, regs.r8, regs.r9};
 
 	while (i < 6)
@@ -171,46 +158,56 @@ void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid)
 		{
 			if (sys == SYS_access || sys == SYS_open)
 			{
-				do
+				// Check for buffer overflow when reading a string
+				char *ptr = (char *)(uintptr_t)arg_registre[i];
+				size_t e = 0;
+				while (e < sizeof(buf) - 1)
 				{
-					data = ptrace(PTRACE_PEEKDATA, pid, (void *)regs.rdi + e, NULL);
+					long data = ptrace(PTRACE_PEEKDATA, pid, ptr + e, NULL);
 					if (data == -1)
 					{
 						perror("ptrace");
 						return;
 					}
-					buf[e] = data;
+					buf[e] = (char)data;
+					if (buf[e] == '\0')
+						break; // Null-terminated string
 					e++;
-				} while (data && e < 100000);
+				}
+				buf[e] = '\0'; // Null-terminate the string
 				printf("\"%s\"", buf);
-				e = 0;
 			}
 			else
 			{
-				print_read_args(pid, (union regs_union){.regs64 = regs}, 1);
+				print_read_args(pid, (union regs_union){.regs64 = regs}, 1, sys);
 			}
 		}
 		if (g_syscall[sys].arg[i] == 4)
 		{
 			if (sys == SYS_access)
 			{
-				do
+				// Check for buffer overflow when reading a string
+				char *ptr = (char *)(uintptr_t)arg_registre[i];
+				size_t e = 0;
+				while (e < sizeof(buf) - 1)
 				{
-					data = ptrace(PTRACE_PEEKDATA, pid, (void *)regs.rdi + e, NULL);
+					long data = ptrace(PTRACE_PEEKDATA, pid, ptr + e, NULL);
 					if (data == -1)
 					{
 						perror("ptrace");
 						return;
 					}
-					buf[e] = data;
+					buf[e] = (char)data;
+					if (buf[e] == '\0')
+						break; // Null-terminated string
 					e++;
-				} while (data && e < 100000);
+				}
+				buf[e] = '\0'; // Null-terminate the string
 				printf("\"%s\"", buf);
-				e = 0;
 			}
 			else
 			{
-				print_read_args(pid, (union regs_union){.regs64 = regs}, 1);
+				print_read_args(pid, (union regs_union){.regs64 = regs}, 1, sys);
 			}
 		}
 		if (g_syscall[sys].arg[i] == 5)
