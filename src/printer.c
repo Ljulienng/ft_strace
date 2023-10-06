@@ -137,7 +137,7 @@ void print_syscall_64(unsigned long sys, struct user_regs_struct regs, int pid)
 	if (sys == 59)
 		return;
 
-	// printf("%s(", g_syscall[sys].name);
+	printf("%s(", g_syscall[sys].name);
 	int i = 0;
 	char buf[100000];
 	long long arg_registre[6] = {regs.rdi, regs.rsi, regs.rdx, regs.r10, regs.r8, regs.r9};

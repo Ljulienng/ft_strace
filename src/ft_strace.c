@@ -175,6 +175,27 @@ int handle_process(pid_t pid, int bits, char **argv)
         // printf("getpid = %d\n", getpid());
         if (WIFEXITED(status))
             break;
+
+        if (WIFSIGNALED(status))
+        {
+            // if (g_summary->on == 0)
+            //     printf("--- SIGSEGV {si_signo = SIGSEGV, si_code = SEGV_MAPERR, si_addr = 0x7f7fffffe000} ---\n");
+            printf("+++ killed by SIGSEGV (core dumped) +++\n");
+            free_summary();
+            kill(getpid(), WTERMSIG(status));
+            return 1;
+        }
+
+        if (WIFSTOPPED(status))
+        {
+            int sig = WSTOPSIG(status);
+            siginfo_t siginfo;
+            if (ptrace(PTRACE_GETSIGINFO, pid, NULL, &siginfo) < 0)
+                exit(1);
+            if (sig != 5 && g_summary->on == 0)
+                printf("--- %s {si_signo = %s, si_code = %d, si_pid = %d, si_uid = %d, si_status = %d, si_utime = %ld, si_stime = %ld} ---\n",
+                    g_sig[sig - 1].name, g_sig[sig - 1].name, siginfo.si_code, siginfo.si_pid, siginfo.si_uid, siginfo.si_status, siginfo.si_utime, siginfo.si_stime);
+        }
         if (!ptrace(PTRACE_GETSIGINFO, pid, NULL, &si))
         {
             signal = si.si_signo;
@@ -186,7 +207,6 @@ int handle_process(pid_t pid, int bits, char **argv)
 
         if (handle_syscall(pid) == EXIT_FAILURE)
         {
-            printf("whoooo\n");
             break;
         }
 
@@ -218,26 +238,8 @@ int handle_process(pid_t pid, int bits, char **argv)
         i++;
     }
     // printf(");
-    if (WIFSIGNALED(status))
-    {
-        if (g_summary->on == 0)
-            printf("--- SIGSEGV {si_signo = SIGSEGV, si_code = SEGV_MAPERR, si_addr = 0x7f7fffffe000} ---\n");
-        printf("+++ killed by SIGSEGV +++\n");
-        free_summary();
-        kill(getpid(), WTERMSIG(status));
-        return 1;
-    }
 
-    if (WIFSTOPPED(status))
-    {
-        int sig = WSTOPSIG(status);
-        siginfo_t siginfo;
-        if (ptrace(PTRACE_GETSIGINFO, pid, NULL, &siginfo) < 0)
-            exit(1);
-        if (sig != 5 && g_summary->on == 0)
-            printf("--- %s {si_signo = %s, si_code = %d, si_pid = %d, si_uid = %d, si_status = %d, si_utime = %ld, si_stime = %ld} ---\n",
-                   g_sig[sig - 1].name, g_sig[sig - 1].name, siginfo.si_code, siginfo.si_pid, siginfo.si_uid, siginfo.si_status, siginfo.si_utime, siginfo.si_stime);
-    }
+
 
     if (g_summary->on == 0)
         printf("exit_group(0) = ?\n+++ exited with 0 +++\n");
